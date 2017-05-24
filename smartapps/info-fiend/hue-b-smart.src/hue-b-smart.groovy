@@ -293,7 +293,7 @@ def bridges() {
                 def title = "Hue Bridge ${ip}"
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
-				href(name: "Delete Bridge", page:"deleteBridge", title:"", description:"Delete bridge 192.168.0.208", params: [mac: "00178849A170"])
+				//href(name: "Delete Bridge", page:"deleteBridge", title:"", description:"Delete bridge 192.168.0.208", params: [mac: "00178849A170"])
         }
     }
 }
@@ -308,7 +308,7 @@ def deleteBridge(params) {
 	
 	def bridge = getBridge(params.mac)
     def d = getChildDevice(params.mac)
-    //log.debug "Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
+    log.debug "Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
     log.debug "Bridge ${bridge}"
 	def success = true
 	def devices = getChildDevices()
@@ -342,11 +342,11 @@ def deleteBridge(params) {
 	}
     if (success) {
     	getLinkedBridges().remove(bridge.key)
-        getUnlinkedBridges().remove(bridge.key)
-        state.unlinked_bridges = ""
+        //getUnlinkedBridges().remove(bridge.key)
+        //state.unlinked_bridges = ""
         return dynamicPage(name:"deleteBridge", title: "Delete Bridge", install:false, uninstall:false, nexdtPage: "Bridges") {
             section() {
-                //paragraph "Bridge ${d.currentValue('networkAddress')} and devices successfully deleted."
+                paragraph "Bridge ${d.currentValue('networkAddress')} and devices successfully deleted."
             	href(name:"Back", page:"Bridges", title:"", description: "Back to main page")
             }
         }    
