@@ -67,7 +67,7 @@ def updated() {
 }
 
 def initialize() {
-    def commandData = parent.getCommandData(device.deviceNetworkId)
+    def commandData = parent.getCommandHub(device.deviceNetworkId)
     log.debug "Initialize Bridge ${commandData}"
     sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
     sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
@@ -242,9 +242,10 @@ def discoverSchedules() {
 def handleParse(desc) {
 
 	log.trace "handleParse()"
+    
 	parse(desc)
-
 }
+
 
 
 // parse events into attributes
@@ -253,15 +254,38 @@ def parse(String description) {
 
 	log.trace "parse()"
 	
+        //STRANGE PROBLEM DEVICE WAS HANDLING THE LINK BUTTON AND NOT THE APP
+    if (state.initialize != true ) {
+	log.debug "Forward to APP we are not installed yet"
+    def parsedEvent = description
+    log.trace "parsedEvent ${parsedEvent}"
+    parent.Hubinstall(parsedEvent)    
+    }else{
+    
 	def parsedEvent = parseLanMessage(description)
+    log.trace "parsedEvent ${parsedEvent}"
 	if (parsedEvent.headers && parsedEvent.body) {
 		def headerString = parsedEvent.headers.toString()
-		if (headerString.contains("application/json")) {
-			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+        log.trace "headerString ${headerString}"
+        def headertrue = false
+        if (headerString.contains("xml")) {
+			log.debug "HeaderString: XML"	
+            /* description.xml reply, verifying bridge */
+            parent.processVerifyResponse(parsedEvent.body)
+            headertrue = true
+        } else if (headerString?.contains("json")) {
+			log.debug "HeaderString: JSON"	
+            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+            headertrue = true
+        }
+        
+			if(header){
 			def bridge = parent.getBridge(parsedEvent.mac)
+            log.trace "Bridge ${bridge}"
+			log.trace "Body ${body}"
             def group 
 			def commandReturn = []
-            
+            log.trace "Body ${body[0]} body success ${body[0].success}"
 			/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	//log.trace "${body[0].success}"
@@ -413,4 +437,5 @@ def parse(String description) {
 	}
 
 	return []		//	?????????????????? NEEDED ???????
+}
 }

@@ -17,7 +17,7 @@
  */
 definition(
         name: "Hue B Smart",
-        namespace: "tmleafs",
+        namespace: "info_fiend",
         author: "anthony pastor",
         description: "The Smartest Hue Control App for SmartThings - total control of bulbs, scenes, groups, and schedules",
         category: "My Apps",
@@ -173,19 +173,19 @@ def linkButton(params) {
         def bridge = getUnlinkedBridges().find{it?.key?.contains(params.ssdpUSN)}
         log.debug("line 171B bridge ${bridge}")
 
-	state.user = params.username
+		state.user = params.username
         state.host = params.ip + ":80"
         log.debug "state.user = ${state.user} ******************"
-	log.debug "state.host = ${state.host} ******************"
+		log.debug "state.host = ${state.host} ******************"
         log.debug "bridge.value.serialNumber = ${bridge.value.serialNumber} *****************"
 
-        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue B Smart Bridge (${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
+        def d = addChildDevice("info_fiend", "Hue B Smart Bridge", bridge.value.mac, bridge.value.hub, [label: "Hue Bridge ${params.ip}", username: "${params.username}", networkAddress: "${params.ip}", host: "${state.host}"])
 		
         d.sendEvent(name: "networkAddress", value: params.ip)
         d.sendEvent(name: "serialNumber", value: bridge.value.serialNumber)
         d.sendEvent(name: "username", value: params.username)
 
-        //subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
+        subscribe(d, "itemDiscovery", itemDiscoveryHandler) //Was erroring for Cbuckles17
 
         params.linkDone = false
         params.linkingBridge = false
@@ -293,6 +293,7 @@ def bridges() {
                 def title = "Hue Bridge ${ip}"
                 href(name:"linkBridge ${mac}", page:"linkButton", title: title, description: "", params: [mac: mac, ip: ip, ssdpUSN: it.value.ssdpUSN])
             }
+				//href(name: "Delete Bridge", page:"deleteBridge", title:"", description:"Delete bridge 192.168.0.208", params: [mac: "00178849A170"])
         }
     }
 }
@@ -308,7 +309,7 @@ def deleteBridge(params) {
 	def bridge = getBridge(params.mac)
     def d = getChildDevice(params.mac)
     log.debug "Deleting bridge ${d.currentValue('networkAddress')} (${params.mac})"
-    
+    log.debug "Bridge ${bridge}"
 	def success = true
 	def devices = getChildDevices()
     def text = ""
@@ -340,7 +341,9 @@ def deleteBridge(params) {
 		}
 	}
     if (success) {
-        getLinkedBridges().remove(bridge.key)
+    	getLinkedBridges().remove(bridge.key)
+        //getUnlinkedBridges().remove(bridge.key)
+        //state.unlinked_bridges = ""
         return dynamicPage(name:"deleteBridge", title: "Delete Bridge", install:false, uninstall:false, nexdtPage: "Bridges") {
             section() {
                 paragraph "Bridge ${d.currentValue('networkAddress')} and devices successfully deleted."
@@ -1277,25 +1280,31 @@ def itemDiscoveryHandler(evt) {
 }
 
 def locationHandler(evt) {
+	log.debug "LocationHandler"	
     def description = evt.description
+	log.debug "Description ${description}"	
     def hub = evt?.hubId
-
+	log.debug "Hub ${hub}"		
     def parsedEvent = parseLanMessage(description)
     parsedEvent << ["hub":hub]
-
+										
     if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
         /* SSDP response */
+		log.debug "SSDP Response"	
         processDiscoveryResponse(parsedEvent)
     } else if (parsedEvent.headers && parsedEvent.body) {
         /* Hue bridge HTTP reply */
         def headerString = parsedEvent.headers.toString()
         if (headerString.contains("xml")) {
+			log.debug "HeaderString: XML"	
             /* description.xml reply, verifying bridge */
             processVerifyResponse(parsedEvent.body)
         } else if (headerString?.contains("json")) {
+			log.debug "HeaderString: JSON"	
             def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
             if (body.success != null && body.success[0] != null && body.success[0].username) {
-                /* got username from bridge */
+                log.debug "Got Username From Bridge"	
+				/* got username from bridge */
                 state.params.linkDone = true
                 state.params.username = body.success[0].username
             } else if (body.error && body.error[0] && body.error[0].description) {
@@ -1307,6 +1316,39 @@ def locationHandler(evt) {
         }
     }
 }
+
+def Hubinstall(evt){
+    def parsedEvent = parseLanMessage(description)
+										
+    if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
+        /* SSDP response */
+		log.debug "SSDP Response"	
+        processDiscoveryResponse(parsedEvent)
+    } else if (parsedEvent.headers && parsedEvent.body) {
+        /* Hue bridge HTTP reply */
+        def headerString = parsedEvent.headers.toString()
+        if (headerString.contains("xml")) {
+			log.debug "HeaderString: XML"	
+            /* description.xml reply, verifying bridge */
+            processVerifyResponse(parsedEvent.body)
+        } else if (headerString?.contains("json")) {
+			log.debug "HeaderString: JSON"	
+            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+            if (body.success != null && body.success[0] != null && body.success[0].username) {
+                log.debug "Got Username From Bridge"	
+				/* got username from bridge */
+                state.params.linkDone = true
+                state.params.username = body.success[0].username
+            } else if (body.error && body.error[0] && body.error[0].description) {
+                log.debug "error: ${body.error[0].description}"
+            } else {
+                log.debug "unknown response: ${headerString}"
+                log.debug "unknown response: ${body}"
+            }
+        }
+    }
+}
+
 
 /**
  * HUE BRIDGE COMMANDS
@@ -1392,7 +1434,7 @@ private sendDeveloperReq(ip, mac) {
 /**
  * UTILITY FUNCTIONS
  **/
-/*def getCommandData(id) {
+def getCommandData(id) {
     def ids = id.split("/")
     def bridge = getBridge(ids[0])
     def bridgeDev = getChildDevice(ids[0])
@@ -1402,9 +1444,9 @@ private sendDeveloperReq(ip, mac) {
                   deviceId: "${ids[1] - "BULB" - "GROUP" - "SCENE" - "SCHEDULE"}",
     ]
     return result
-}*/
+}
 
-def getCommandData(id) {
+def getCommandHub(id) {
     def ids = id.split("/")
     def devId
     def ipAddr
