@@ -264,9 +264,10 @@ def parse(String description) {
     
 	def parsedEvent = parseLanMessage(description)
     log.trace "parsedEvent ${parsedEvent}"
+    log.trace "parsedEvent BODY ${parsedEvent.body}"
 	if (parsedEvent.headers && parsedEvent.body) {
 		def headerString = parsedEvent.headers.toString()
-        log.trace "headerString ${headerString}"
+        log.debug "HEADER STRING ${headerString}"
         def headertrue = false
         if (headerString.contains("xml")) {
 			log.debug "HeaderString: XML"	
@@ -276,6 +277,7 @@ def parse(String description) {
         } else if (headerString?.contains("json")) {
 			log.debug "HeaderString: JSON"	
             def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
+			log.trace "JSON BODY ${body}"	
             headertrue = true
         }
         
