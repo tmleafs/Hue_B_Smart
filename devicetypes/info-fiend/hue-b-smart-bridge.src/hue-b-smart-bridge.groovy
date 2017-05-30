@@ -279,7 +279,7 @@ def parse(String description) {
             headertrue = true
         }
         
-			if(header){
+			if(headertrue){
 			def bridge = parent.getBridge(parsedEvent.mac)
             log.trace "Bridge ${bridge}"
 			log.trace "Body ${body}"
