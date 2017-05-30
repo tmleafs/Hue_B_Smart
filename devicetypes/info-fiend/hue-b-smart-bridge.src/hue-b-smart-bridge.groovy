@@ -282,13 +282,12 @@ def parse(String description) {
         
 			if(headertrue){
 			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)	
-			log.trace "Body ${body}
-		def bridge = parent.getBridge(parsedEvent.mac)
-            log.trace "Bridge ${bridge}"
-			"
-            def group 
+			log.trace "Body ${body}"
+			def bridge = parent.getBridge(parsedEvent.mac)
+            		log.trace "Bridge ${bridge}"
+			def group 
 			def commandReturn = []
-            log.trace "Body ${body[0]} body success ${body[0].success}"
+            		log.trace "Body ${body[0]} body success ${body[0].success}"
 			/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	log.trace "${body[0].success}"
