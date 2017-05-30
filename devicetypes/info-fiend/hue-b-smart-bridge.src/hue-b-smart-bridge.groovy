@@ -276,15 +276,16 @@ def parse(String description) {
             headertrue = true
         } else if (headerString?.contains("json")) {
 			log.debug "HeaderString: JSON"	
-            def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)
-			log.trace "JSON BODY ${body}"	
-            headertrue = true
+          
+           headertrue = true
         }
         
 			if(headertrue){
-			def bridge = parent.getBridge(parsedEvent.mac)
+			def body = new groovy.json.JsonSlurper().parseText(parsedEvent.body)	
+			log.trace "Body ${body}
+		def bridge = parent.getBridge(parsedEvent.mac)
             log.trace "Bridge ${bridge}"
-			log.trace "Body ${body}"
+			"
             def group 
 			def commandReturn = []
             log.trace "Body ${body[0]} body success ${body[0].success}"
