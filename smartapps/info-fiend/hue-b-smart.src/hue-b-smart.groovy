@@ -81,7 +81,7 @@ def manageBridge(params) {
     }
 
     // resend request if we haven't received a response in 10 seconds 
-    if (!bridge.value.itemsDiscovered && ((!state.inItemDiscovery && !state.itemDiscoveryComplete) || (state.itemRefreshCount == 6))) {
+    if (!bridge.value.itemsDiscovered && ((!state.inItemDiscovery && !state.itemDiscoveryComplete) || (state.itemRefreshCount == 120))) {
 		unschedule() 
         state.itemDiscoveryComplete = false
         state.inItemDiscovery = mac
