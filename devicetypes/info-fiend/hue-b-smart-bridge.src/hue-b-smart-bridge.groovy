@@ -17,6 +17,13 @@
  *	Version 1.5 Remove non working Schedules
  *	Version 1.5 Remove Schedules and other non working code & Clean up
  */
+
+preferences {
+    input("DeviceIP", "string", title:"HUB IP Address", description:"Please enter the HUB's IP address", defaultValue:"" , required: false, displayDuringSetup: false)
+//	input("DeviceUser", "string", title:"HUB Username", description:"Please enter the HUB's Username", defaultValue:"" , required: false, displayDuringSetup: false)
+//	input("DeviceMAC", "string", title:"HUB MAC Address", description:"Please enter the HUB's MAC Address", defaultValue:"" , required: false, displayDuringSetup: false)
+} 
+
 metadata {
 	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
 	capability "Actuator"
@@ -79,7 +86,8 @@ def initialize() {
     def commandData = parent.getCommandData(device.deviceNetworkId)
     log.debug "Initialize Bridge ${commandData}"
     sendEvent(name: "idNumber", value: commandData.deviceId, displayed:true, isStateChange: true)
-    sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
+    //sendEvent(name: "networkAddress", value: commandData.ip, displayed:false, isStateChange: true)
+    sendEvent(name: "networkAddress", value: DeviceIP)
     sendEvent(name: "username", value: commandData.username, displayed:false, isStateChange: true)
     state.host = this.device.currentValue("networkAddress") + ":80"
     state.userName = this.device.currentValue("username")
