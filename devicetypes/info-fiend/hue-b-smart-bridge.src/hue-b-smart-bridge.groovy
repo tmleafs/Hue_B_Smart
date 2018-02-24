@@ -14,7 +14,8 @@
  *
  *	Version 1 TMLeafs Fork
  *	Version 1.1 Thanks to Detmer for changes and testing
- *
+ *	Version 1.5 Remove non working Schedules
+ *	Version 1.5 Remove Schedules and other non working code & Clean up
  */
 metadata {
 	definition (name: "Hue B Smart Bridge", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -29,16 +30,14 @@ metadata {
 	attribute "username", "string"
 	attribute "host", "string"
         
-	command "discoverItems"
+		command "discoverItems"
         command "discoverBulbs"
         command "discoverGroups"
         command "discoverScenes"
-        command "discoverSchedules"
         command "pollItems"
         command "pollBulbs"
         command "pollGroups"
         command "pollScenes"
-        command "pollSchedules"
         
 	}
 
@@ -51,13 +50,13 @@ metadata {
         		state "default", label:"Hue Bridge", inactivelabel:true, icon:"st.Lighting.light99-hue", backgroundColor: "#cccccc"
         }
 		valueTile("idNumber", "device.idNumber", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'ID: ${currentValue}'
+			state "default", label:'MAC Address:\n ${currentValue}'
 		}
 		valueTile("networkAddress", "device.networkAddress", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'IP: ${currentValue}'
+			state "default", label:'IP Address:\n ${currentValue}'
 		}
 		valueTile("username", "device.username", decoration: "flat", height: 2, width: 6, inactiveLabel: false) {
-			state "default", label:'username: ${currentValue}'
+			state "default", label:'Username:\n ${currentValue}'
 		}
 		
 	main "bridge"
@@ -197,23 +196,6 @@ def pollGroups() {
 	    
 }
 
-def discoverScenes() {
-	log.debug("discoverScenes: discovering scenes from Hue hub.")
-
-	def host = state.host
-	def username = state.userName
-	
-	def result = new physicalgraph.device.HubAction(
-		method: "GET",
-		path: "/api/${username}/scenes/",
-		headers: [
-			HOST: host
-		]
-	)
-	
-	return result
-}
-
 def pollScenes() {
 	log.trace "pollGroups: polling scenes state from Hue hub."
 
@@ -230,25 +212,6 @@ def pollScenes() {
 	    
 }
 
-
-def discoverSchedules() {
-	log.trace "discoverSchedules: discovering schedules from Hue hub."
-
-	def host = state.host
-	def username = state.userName
-	
-	def result = new physicalgraph.device.HubAction(
-		method: "GET",
-		path: "/api/${username}/schedules/",
-		headers: [
-			HOST: host
-		]
-	)
-	
-	return result
-}
-
-
 def handleParse(desc) {
 
 	log.trace "handleParse()"
@@ -261,7 +224,7 @@ def handleParse(desc) {
 
 def parse(String description) {
 
-	log.trace "parse()"
+	//log.trace "parse()"
 	
 	def parsedEvent = parseLanMessage(description)
 	if (parsedEvent.headers && parsedEvent.body) {
@@ -272,7 +235,7 @@ def parse(String description) {
             def group 
 			def commandReturn = []
             
-			/* responses from bulb/group/scene/schedule command. Figure out which device it is, then pass it along to the device. */
+			/* responses from bulb/group/scene/ command. Figure out which device it is, then pass it along to the device. */
 			if (body[0] != null && body[0].success != null) {
             	log.trace "${body[0].success}"
 				body.each{
@@ -283,73 +246,46 @@ def parse(String description) {
                         def d
                         def groupScene
 						
-                      // SCHEDULES
-						if (spl[4] == "schedules" || it.toString().contains("command")) {		
-                   			/**
-                   			devId = bridge.value.mac + "/SCHEDULE" + k
-                   	        log.debug "SCHEDULES: k = ${k}, split3 = ${spl[1]}, split4= ${spl[2]}, value = ${v}"
-                            sch = parent.getChildDevice(devId)
-   	                        schId = spl[2]
-//							def username = state.host
-//							def username = state.userName
-                            
-							log.debug "schedule ${schId} successfully enabled/disabled."
-
-//                   	        parent.doDeviceSync("schedules")
-                   	        **/
-
-						// SCENES			
-						} else if (spl[4] == "scene" || it.toString().contains( "lastupdated") ) {	
+						if (spl[4] == "scene" || it.toString().contains( "lastupdated") ) {	
 							log.trace "HBS Bridge:parse:scene - msg.body == ${body}"
                    			devId = bridge.value.mac + "/SCENE" + v
 	                        d = parent.getChildDevice(devId)
-    	                        groupScene = spl[2]
-//								def username = state.host
-//								def username = state.userName
-                            
+    	                    groupScene = spl[2]
                             d.updateStatus(spl[3], spl[4], v) 
 							log.debug "Scene ${d.label} successfully run on group ${groupScene}."
-					                        
-			     	        //pollGroups() 	// parent.doDeviceSync("groups")
-			     	        //pollBulbs() 	// parent.doDeviceSync("bulbs")
-                    	
+							//parent.doDeviceSync("bulbs")
+
                     	// GROUPS
 						} else if (spl[1] == "groups" && spl[2] != 0 ) {    
             	        	devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
         	    	        //log.debug "GROUP: devId = ${devId}"                            
-	
 							d = parent.getChildDevice(devId)
-
 							d.updateStatus(spl[3], spl[4], v) 
-							
-                            def gLights = []
+						    def gLights = []
                             def thisbridge = bridge.value.mac
                             //log.debug "This Bridge ${thisbridge}"
-                            gLights = parent.getGLightsDNI(spl[2], thisbridge)
-                            gLights.each { gl ->
-                             
-                            if(gl != null){
-                            	gl.updateStatus("state", spl[4], v)
-                                log.debug "GLight ${gl}"
-				}
+                            
+							gLights = parent.getGLightsDNI(spl[2], thisbridge)
+                            	gLights.each { gl ->
+                             			if(gl != null){
+                            			gl.updateStatus("state", spl[4], v)
+                                		log.debug "GLight ${gl}"
+										}
                             }
                             
 						// LIGHTS		
 						} else if (spl[1] == "lights") {
 							spl[1] = "BULBS"
-								
 							devId = bridge.value.mac + "/" + spl[1].toUpperCase()[0..-2] + spl[2]
 							d = parent.getChildDevice(devId)
-	                    	
 	                    	d.updateStatus(spl[3], spl[4], v)
-						
 						} else {
 							log.warn "Response contains unknown device type ${ spl[1] } ."                                               	            
 						}
                         
                         commandReturn
-					}
-				}	
+						}
+					}	
 			} else if (body[0] != null && body[0].error != null) {
 				log.warn "Error: ${body}"
 			} else if (bridge) {
@@ -357,69 +293,25 @@ def parse(String description) {
 				def bulbs = [:] 
 				def groups = [:] 
 				def scenes = [:] 
-                def schedules = [:] 
-
-				body?.lights?.each { k, v ->
-					bulbs[k] = [id: k, label: v.name, type: v.type, state: v.state]
-				}
-				    
-				state.bulbs = bulbs
-				    
-	            body?.groups?.each { k, v -> 
-                   
-    	            groups[k] = [id: k, label: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights] //, groupLightDevIds: devIdsGLights]
-				}
-				
-				state.groups = groups
-				
-	            body.scenes?.each { k, v -> 
-                   	//log.trace "k=${k} and v=${v}"
-                        				
-                  	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
-                            
-				}
                 
-                state.scenes = scenes
-                    
-                body.schedules?.each { k, v -> 
-                  	//log.trace "schedules k=${k} and v=${v}"
-                   	
-                   	def schCommand = v.command.address
-                  //log.debug "schCommand = ${schCommand}"
-                
-                    def splCmd = schCommand.split("/")
-                 //log.debug "splCmd[1] = ${splCmd[1]} / splCmd[2] = ${splCmd[2]} / splCmd[3] = ${splCmd[3]} / splCmd[4] = ${splCmd[4]}"                        
-                    def schGroupId = splCmd[4] 
-					//log.debug "schGroupId = ${schGroupId}"
-//                 	def schSceneId = bridge.value.mac + "/SCENES" + ${v.command.body.scene}
-    	        
-    	            schedules[k] = [id: k, name: v.name, type: "schedule", sceneId: v.command.body.scene, groupId: schGroupId, status: v.status]
-				}
-
-                	return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
-
-/**
-                if (bulbs && groups && scenes) {
-                	return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
-				} else {
-
-					if (bulbs) {                
-    	            	return createEvent(name: "bulbDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, bridge.value.mac])
-					} 
-				
-					if (groups) {                
-                		return createEvent(name: "groupDiscovery", value: device.hub.id, isStateChange: true, data: [groups, bridge.value.mac])
+					body?.lights?.each { k, v ->
+						bulbs[k] = [id: k, label: v.name, type: v.type, state: v.state]
 					}
-					
-					if (scenes) {                
-            	    	return createEvent(name: "sceneDiscovery", value: device.hub.id, isStateChange: true, data: [scenes, bridge.value.mac])				
-					} 
+					state.bulbs = bulbs
+				    
+	            	body?.groups?.each { k, v -> 
+                		groups[k] = [id: k, label: v.name, type: v.type, action: v.action, all_on: v.state.all_on, any_on: v.state.any_on, lights: v.lights] //, groupLightDevIds: devIdsGLights]
+					}
+					state.groups = groups
 				
-					if (schedules) {                
-    	            	return createEvent(name: "scheduleDiscovery", value: device.hub.id, isStateChange: true, data: [schedules, bridge.value.mac])                    
-        	     	}       
-            	}    
-**/                
+	            	body.scenes?.each { k, v -> 
+                   		//log.trace "k=${k} and v=${v}"
+                      	scenes[k] = [id: k, label: v.name, type: "scene", lights: v.lights]
+                   	}
+                  	state.scenes = scenes
+                
+            	return createEvent(name: "itemDiscovery", value: device.hub.id, isStateChange: true, data: [bulbs, scenes, groups, schedules, bridge.value.mac])
+          
 			}
 			
 		} else {
@@ -427,6 +319,5 @@ def parse(String description) {
 		}
 		
 	}
-
-	return []		//	?????????????????? NEEDED ???????
+		return []
 }

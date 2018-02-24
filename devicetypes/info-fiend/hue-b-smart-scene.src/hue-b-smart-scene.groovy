@@ -12,8 +12,8 @@
  *  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License
  *  for the specific language governing permissions and limitations under the License.
  *
- *  	Version 1 TMLeafs Fork
- *
+ *  	Version 1 	TMLeafs Fork
+ *	Version 1.5	Remove QFixes & Schedules 
  */
 metadata {
 	definition (name: "Hue B Smart Scene", namespace: "info_fiend", author: "Anthony Pastor") {
@@ -28,15 +28,11 @@ metadata {
         command "updateScene"
         command	"updateSceneFromDevice"
         command "updateStatus"
-        command "applySchedule"
-        command "quickFix"
-        command "noFix"   
-        command "refresh"   
+	command "refresh"   
         
         attribute "getSceneID", "STRING"        
         attribute "lights", "STRING"  
         attribute "sceneID", "string"
-        attribute "scheduleId", "NUMBER"
         attribute "host", "string"
         attribute "username", "string"
         attribute "group", "NUMBER"
@@ -50,7 +46,8 @@ metadata {
 	tiles (scale: 2) {
 	    multiAttributeTile(name:"switch", type: "generic", width: 6, height: 4, canChangeIcon: true){
 		tileAttribute ("device.switch", key: "PRIMARY_CONTROL") {
-		attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#00a0dc"
+		attributeState "off", label: 'push', action: "momentary.push", backgroundColor: "#ffffff",icon: "st.lights.philips.hue-multi", nextState: "on"
+        	attributeState "on",  label:'Push', action:"momentary.push", icon:"st.lights.philips.hue-multi", backgroundColor:"#00a0dc"
 			}
 	}
     
@@ -73,18 +70,9 @@ metadata {
         valueTile("lightStates", "device.lightStates", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
 		state "default", label: 'lightStates: ${currentValue}'
         }
-        
-        valueTile("scheduleId", "device.scheduleId", inactiveLabel: false, decoration: "flat", width: 3, height: 2) {
-		state "scheduleId", label: 'Schedule: ${currentValue} ' //, action:"getScheduleID"
-        }
-        
-	valueTile("schedule", "device.schedule",  width: 4, height: 2) {	//decoration: "flat"
-    	   	state "off", label: 'QFix Off', action:"quickFix", backgroundColor:"#BDE5F2" //, nextState: "Enabled"
-          	state "on", label: 'QFix On', action:"noFix", backgroundColor:"#FFA500"//, defaultState: "Disabled"
-	}
-        
+               
     main "switch"
-    details (["switch", "lights", "updateScene", "refresh","sceneID"]) 	// "scheduleId",
+    details (["switch", "updateScene", "refresh", "lights", "sceneID"])
 	}
 }
 
@@ -122,6 +110,8 @@ def off() {
  **/
 def push() {
 	def theGroup = device.currentValue("group") ?: 0
+    sendEvent(name: "switch", value: "on", isStateChange: true, display: false)
+	sendEvent(name: "switch", value: "off", isStateChange: true, display: false)
     sendEvent(name: "momentary", value: "pushed", isStateChange: true)    
 	setToGroup()
 }
@@ -190,7 +180,6 @@ def setTo2Groups ( group1, group2 ) {
 		])
 	)
 parent.doDeviceSync()
-
 }
 
 def turnGroupOn(inGroupID) {
@@ -211,33 +200,6 @@ def turnGroupOn(inGroupID) {
 	parent.doDeviceSync()
 }
 
-
-def quickFix() {
-	log.debug "Turning QuickFix ON (if schedule exists)"
-    if (this.device.currentValue("scheduleId")) {
-		def schId = this.device.currentValue("scheduleId")
-        def sceneId = this.device.currentValue("sceneID")   
-    	def devId = this.device.deviceNetworkId
-	    log.debug "sceneId = ${sceneId} & schId = ${schId} s/b ${this.device.currentValue("scheduleId")}"    	    
-		parent.quickFixON(devId, sceneId, schId)
-        
-	} else { 
-    	log.debug "Scene ${sceneId} doesn't have a Hue Hub schedule"
-	    
-	}
-}
-
-def noFix() {
-	log.debug "Turning QuickFix OFF for this scene, if enabled"
-    if (this.device.currentValue("scheduleId")) {
-	    def schId = this.device.currentValue("scheduleId")
-    	def sceneId = this.device.currentValue("sceneID")    
-		parent.noFix(this.device.deviceNetworkId, sceneId, schId)
-	} else { 
-    	log.debug "Scene ${sceneId} doesn't have a Hue Hub schedule"
-	}    
-}
-
 def updateScene() {
 	log.debug "Updating scene!"
     def commandData = parent.getCommandData(this.device.deviceNetworkId)
@@ -255,8 +217,6 @@ def updateScene() {
 		])
 	)	
 }
-
-
 
 def updateSceneFromDevice() {
 	log.trace "${this}: Update updateSceneFromDevice Reached."

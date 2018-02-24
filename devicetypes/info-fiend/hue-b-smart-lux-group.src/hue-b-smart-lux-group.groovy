@@ -15,6 +15,7 @@
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
  *	1.4 Fixed IDE Logging Information + Other Bug Fixes
+ *	1.5 Added Light capability for smartapps
  *
  */
 preferences {
@@ -31,6 +32,7 @@ metadata {
 	capability "Refresh"
 	capability "Sensor"
 	capability "Configuration"
+	capability "Light"
                 
 	command "reset"
 	command "refresh"
@@ -71,7 +73,7 @@ metadata {
 	}
 
 	standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-		state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-multi"
+		state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-multi"
 	}
 	
 	standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
@@ -82,17 +84,17 @@ metadata {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 	}
         
-	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+            state "transitiontime", label: 'Transition Time: ${currentValue}'
         }
 
-	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+	valueTile("groupID", "device.groupID", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 		state "default", label: 'GroupID: ${currentValue}'
 	}	
 
 	}
 	main(["rich-control"])
-	details(["rich-control","reset","flash", "refresh", "groupID" ,"transitiontime"])
+	details(["rich-control","flash", "reset", "refresh", "transitiontime", "groupID"])
 }
 
 private configure() {		

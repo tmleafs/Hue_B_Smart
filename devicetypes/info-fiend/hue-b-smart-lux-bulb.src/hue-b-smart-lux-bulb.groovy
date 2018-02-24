@@ -15,6 +15,7 @@
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
  *	1.4 Fixed IDE Logging Information + Other Bug Fixes
+ *	1.5 Added Light capability for smartapps
  * 
  */
 preferences {
@@ -33,6 +34,7 @@ metadata {
 	capability "Refresh"					
 	capability "Sensor"
 	capability "Configuration"
+    	capability "Light"
        
 	command "reset"
 	command "refresh"
@@ -85,12 +87,12 @@ metadata {
 		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
 	}
 
-	valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
+	valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
 		state "default", label: 'Reachable: ${currentValue}'
 	}
         
-        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
+        valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+            state "transitiontime", label: 'Transition Time: ${currentValue}'
         }
 
 	}
@@ -315,8 +317,8 @@ private updateStatus(action, param, val) {
 	if (action == "state") {
 	def idelogging = device.currentValue("idelogging")
         def curValue
-	switch(param) {
-	case "on":
+		switch(param) {
+        	case "on":
             	curValue = device.currentValue("switch")
             	if (val == true) {
        	         	if (curValue != on) {
@@ -337,7 +339,7 @@ private updateStatus(action, param, val) {
 	                }
                 }    
                 break
-	case "bri":
+            case "bri":
 	            curValue = device.currentValue("level")
                 val = scaleLevel(val)
                 if (curValue != val) {
@@ -349,14 +351,14 @@ private updateStatus(action, param, val) {
                 }
                 
                 break
-	case "reachable":
+	    case "reachable":
 			if (val == true){
 			sendEvent(name: "reachable", value: true, displayed: false, isStateChange: true)
 			}else{
 			sendEvent(name: "reachable", value: false, displayed: false, isStateChange: true)
                 }
                 break
-	case "transitiontime":
+            case "transitiontime":
 		curValue = device.currentValue("transitionTime")
                 if (curValue != val) {
 			if(idelogging == 'All'){ 
@@ -366,7 +368,7 @@ private updateStatus(action, param, val) {
 	     		//log.debug "NO Update Needed for transitionTime."                	
                 }    
                 break
-	case "alert":
+            case "alert":
             	if (val == "none" && idelogging == "All") {
             		log.debug "Not Flashing"            		
                 	} else if(val != "none" && idelogging == "All")  {

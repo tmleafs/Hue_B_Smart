@@ -17,6 +17,7 @@
  *	Version 1 TMLeafs Fork
  *	1.2 Added command flashCoRe for webcore
  *	1.4 Fixed IDE Logging Information + Other Bug Fixes
+ *	1.5 Added Light Capability for smartapps
  *
  */
 preferences {
@@ -34,6 +35,7 @@ metadata {
 	capability "Refresh"
 	capability "Sensor"
 	capability "Configuration"
+	capability "Light"
 
 	command "reset"
 	command "refresh"
@@ -84,36 +86,37 @@ metadata {
 
 		}
 
-		standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Reset Color", action:"reset", icon:"st.lights.philips.hue-single"
-		}
-		
-		standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
-		}
+	valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+		state "colorTemperature", label: 'Color Temp:  ${currentValue}'
+	}
         
-        valueTile("valueCT", "device.colorTemperature", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
-			state "colorTemperature", label: 'Color Temp:  ${currentValue}'
-        }
-        
-		controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
-        	state "setCT", action:"setColorTemperature"
-		}
-        
-        standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
-			state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-single"
-		}
-		
-		valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-            state "transitiontime", label: 'Transitiontime is set to ${currentValue}'
-        }     
-		
-		valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 6, height: 2) {
-			state "default", label: 'Reachable: ${currentValue}'
-		}
+	controlTile("colorTemperature", "device.colorTemperature", "slider", inactiveLabel: false,  width: 4, height: 1, range:"(2200..6500)") { 
+		state "setCT", action:"setColorTemperature"
+	}
+    
+	standardTile("flash", "device.flash", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Flash", action:"flash", icon:"st.lights.philips.hue-multi"
+	}
+     
+    standardTile("reset", "device.reset", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"Reset", action:"reset", icon:"st.lights.philips.hue-multi"
+	}
+    
+    standardTile("refresh", "device.switch", inactiveLabel: false, decoration: "flat", width: 2, height: 2) {
+		state "default", label:"", action:"refresh.refresh", icon:"st.secondary.refresh"
+	}
+    
+	valueTile("transitiontime", "device.transitionTime", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+		state "transitiontime", label: 'Transition Time: ${currentValue}'
+    }
+	
+	valueTile("reachable", "device.reachable", inactiveLabel: false, decoration: "flat", width: 3, height: 1) {
+		state "default", label: 'Reachable: ${currentValue}'
+	}
+    
 	}
 	main(["rich-control"])
-	details(["rich-control","valueCT","colorTemp", "colorTemperature","reset","flash","refresh", "transitiontime", "reachable"])
+	details(["rich-control","valueCT", "colorTemperature","flash","reset","refresh", "transitiontime", "reachable"])
 }
 
 void installed() {
