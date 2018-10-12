@@ -48,7 +48,9 @@ preferences {
 	page(name:"settings", content: "settings")
     	page(name:"deleteBridge", content: "deleteBridge")
         page(name:"unlinkBridge", content: "unlinkBridge")
-}
+        page(name:"manualadd", content: "manualadd")
+         page(name:"manualaddcheck", content: "manualaddcheck")
+        }
 
 def manageBridge(params) {
 
@@ -304,7 +306,89 @@ def bridges() {
         section("SmartApp Settings") {
             href(name:"Settings", page:"settings", title: "Settings", description: "")
             }
+        section("Manual Add Bridge") {
+            href(name:"manualadd", page:"manualadd", title: "Manual Add Bridge", description: "")
+            }
+
     }
+}
+
+def manualadd() {
+      dynamicPage(name:"manualadd", title: "Manually Add Hue Bridge", nextPage: "manualaddcheck", uninstall: true, install:false) {
+            section() {
+                paragraph "Manual Add Hue Bridge"
+                input "manualip", "text", title: "Hue Bridge IP Address", required: true, autoCorrect:false
+			    input "manualmac", "text", title: "Hue Bridge MAC Address (Without the ':')", required: true, autoCorrect:false
+                input "manualport", "text", title: "Hue Bridge Port", default:"80", required: true, autoCorrect:false    
+            	//href(name:"Back", page:"Bridges", title:"", description: "Back to main page")
+            }
+        } 
+}
+
+private String convertIPtoHex(ipAddress) { 
+    String hex = ipAddress.tokenize( '.' ).collect {  String.format( '%02x', it.toInteger() ) }.join()
+    log.debug "IP address entered is $ipAddress and the converted hex code is $hex"
+    return hex
+
+}
+
+private String convertPortToHex(port) {
+	String hexport = port.toString().format( '%04x', port.toInteger() )
+    log.debug hexport
+    return hexport
+}
+
+def manualaddcheck() {
+	logMessage("Manual IP Address ${manualip}")
+    logMessage("Manual MAC Address ${manualmac}")
+    def hexip = convertIPtoHex(manualip).toUpperCase()
+	def hexport = convertPortToHex(manualport)
+    logMessage("Manual HEX IP Address ${hexip}")
+    def maclower = manualmac.toLowerCase()
+    def macup = manualmac.toUpperCase()
+    logMessage("Manual MAC Address Lower Case ${maclower}")
+    logMessage("Manual MAC Address Upper Case ${macup}")
+	logMessage("Manual Port ${manualport}")
+    logMessage("Manual Port in HEX ${hexport}")
+    def evt = [:]
+//[uuid:2f402f80-da50-11e1-9b23-00178822efe6:[deviceAddress:0050, devicetype:04, hub:cf76a408-3bee-4697-af90-d33d8840150c, itemsDiscovered:false, mac:00178849A170, name:Philips hue (172.20.7.238), networkAddress:AC1407EE, serialNumber:00178849a170, ssdpNTS:null, ssdpPath:/description.xml, ssdpTerm:urn:schemas-upnp-org:device:basic:1, ssdpUSN:uuid:2f402f80-da50-11e1-9b23-00178849a170, stringCount:04, verified:true]]
+//def parsedEvent = parseLanMessage("uuid:2f402f80-da50-11e1-9b23-${maclower}:[deviceAddress:${hexport}, devicetype:04, hub:null, itemsDiscovered:false, mac:${macup}, name:Philips hue (${manualip}), networkAddress:${hexip}, serialNumber:${maclower}, ssdpNTS:null, ssdpPath:/description.xml, ssdpTerm:urn:schemas-upnp-org:device:basic:1, ssdpUSN:uuid:2f402f80-da50-11e1-9b23-${maclower}, stringCount:04]")
+evt.description = "devicetype:04, mac:${macup}, networkAddress:${hexip}, deviceAddress:${hexport}, stringCount:04, ssdpPath:/description.xml, ssdpUSN:uuid:2f402f80-da50-11e1-9b23-${maclower}, ssdpTerm:urn:schemas-upnp-org:device:basic:1, ssdpNTS:null, hub:null"
+//[uuid:2f402f80-da50-11e1-9b23-manualmac:[deviceAddress:port in hex, devicetype:04, itemsDiscovered:false, mac:mac address caps, name:Philips hue (IP Address), networkAddress:IP Addess in Hex, serialNumber:mac in lower case, ssdpNTS:null, ssdpPath:/description.xml, ssdpTerm:urn:schemas-upnp-org:device:basic:1, ssdpUSN:uuid:2f402f80-da50-11e1-9b23-mac in lower case, stringCount:04, verified:true]]
+    logMessage("ParsedEvent ${evt}")
+	//parsedEvent << ["hub":hub]
+    //logMessage("ParsedEvent HUB ${parsedEvent}")
+//processDiscoveryResponse(evt)
+//processVerifyResponse(parsedEvent)
+//state.unlinked_bridges << [parsedEvent]
+        //state.unlinked_bridges = parsedEvent
+locationHandler(evt)
+/**
+		sendHubCommand(new physicalgraph.device.HubAction([
+			method: "GET",
+			path: "/description.xml",
+			headers: [
+					HOST: "172.20.0.238:80"
+			]], "00178849A170" ,[callback: "locationHandler"]))	
+
+
+try {
+    def hubAction = new physicalgraph.device.HubAction([
+			method: "GET",
+			path: "/description.xml",
+			headers: [
+					HOST: manualip
+			]], manualmac ,[callback: "locationHandler"])
+    log.debug hubAction
+	hubAction
+}
+catch(Exception ex) {
+	log.debug "Hit Exception $e on $hubAction"
+}
+**/
+
+			bridges()
+        
 }
 
 def settings() {
@@ -482,17 +566,15 @@ def chooseBulbs(params) {
 			addedBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
-   				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name} - BULB ID [${id}]", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Bulbs") {
 			availableBulbs.sort{it.value.name}.each { 
 				def devId = "${params.mac}/BULB${it.key}"
 				def name = it.value.label
-   				def id = it.value.id
-				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name} - BULB ID [${id}]", params: [mac: params.mac, add: it.key], submitOnChange: true )
-		}
+				href(name:"${devId}", page:"chooseBulbs", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
+			}
         }
     }
 }
@@ -576,16 +658,15 @@ def chooseScenes(params) {
 			addedScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
-                		def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name} - ${lights}", params: [mac: params.mac, remove: devId], submitOnChange: true )
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Remove ${name}", params: [mac: params.mac, remove: devId], submitOnChange: true )
 			}
 		}
         section("Available Scenes") {
 			availableScenes.sort{it.value.name}.each { 
 				def devId = "${params.mac}/SCENE${it.key}"
 				def name = it.value.label
-				def lights = it.value.lights
-				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name} - ${lights}", params: [mac: params.mac, add: it.key], submitOnChange: true )}
+				href(name:"${devId}", page:"chooseScenes", description:"", title:"Add ${name}", params: [mac: params.mac, add: it.key], submitOnChange: true )
+			}
         }
     }
 }
@@ -887,14 +968,20 @@ def locationHandler(evt) {
     def parsedEvent = parseLanMessage(description)
     parsedEvent << ["hub":hub]
 
+	logMessage("locationHandler ${parsedEvent}", "info")
+
     if (parsedEvent?.ssdpTerm?.contains("urn:schemas-upnp-org:device:basic:1")) {
-        /* SSDP response */
+        /* SSDP response */	
+        logMessage("/* SSDP response */", "info")
         processDiscoveryResponse(parsedEvent)
     } else if (parsedEvent.headers && parsedEvent.body) {
         /* Hue bridge HTTP reply */
+                logMessage("/* Hue bridge HTTP reply */", "info")
+
         def headerString = parsedEvent.headers.toString()
         if (headerString.contains("xml")) {
             /* description.xml reply, verifying bridge */
+            logMessage("/* description.xml reply, verifying bridge */", "info")
             processVerifyResponse(parsedEvent.body)
         } else if (headerString?.contains("json")) {
             def body = new groovy.json.JsonSlurperClassic().parseText(parsedEvent.body)
@@ -910,6 +997,11 @@ def locationHandler(evt) {
             }
         }
     }
+    else {
+                logMessage("Not a Hue Bridge", "error")
+
+            }
+    
 }
 
 /**
@@ -918,6 +1010,11 @@ def locationHandler(evt) {
 private discoverHueBridges() {
     logMessage("Sending bridge discovery", "info")
     sendHubCommand(new physicalgraph.device.HubAction("lan discovery urn:schemas-upnp-org:device:basic:1", physicalgraph.device.Protocol.LAN))
+    //sendHubCommand(new physicalgraph.device.HubAction("lan discovery upnp:rootdevice", physicalgraph.device.Protocol.LAN))
+    //sendHubCommand(new physicalgraph.device.HubAction("lan discovery SsdpSearch:all", physicalgraph.device.Protocol.LAN))
+
+
+
 }
 
 private verifyHueBridges() {
@@ -925,6 +1022,8 @@ private verifyHueBridges() {
     devices.each {
         def ip = convertHexToIP(it.value.networkAddress)
         def port = convertHexToInt(it.value.deviceAddress)
+        	logMessage("Verify Hue Bridge info ${ip} ${port} ${it.value.mac}", "info")
+
         verifyHueBridge("${it.value.mac}", (ip + ":" + port))
     }
 }	
@@ -944,7 +1043,7 @@ private verifyHueBridge(String deviceNetworkId, String host) {
  * HUE BRIDGE RESPONSES
  **/
 private processDiscoveryResponse(parsedEvent) {
-	logMessage("Discovery Response is ${parsedEvent}", "trace")
+	logMessage("Discovery Response is ${parsedEvent} mac:${parsedEvent.mac} hexip: ${parsedEvent.networkAddress}", "trace")
     logMessage("Discovered bridge ${parsedEvent.mac} (${convertHexToIP(parsedEvent.networkAddress)})", "info")
 
     def bridge = getUnlinkedBridges().find{it?.key?.contains(parsedEvent.ssdpUSN)} 
@@ -971,6 +1070,10 @@ private processVerifyResponse(physicalgraph.device.HubResponse hubResponse) {
     logMessage("description.xml response (application/xml)", "trace")
 	def body = hubResponse.xml
     logMessage("Processing verify response", "info")
+        logMessage("body ${body}", "info")
+logMessage("body ${body?.device?.modelName}", "info")
+logMessage("UND ${body?.device?.UDN?.text()}", "info")
+
     if (body?.device?.modelName?.text().startsWith("Philips hue bridge")) {
         logMessage(body?.device?.UDN?.text())
         def bridge = getUnlinkedBridges().find({it?.key?.contains(body?.device?.UDN?.text())})
