@@ -816,6 +816,7 @@ def colorloopOff() {
 def scaleLevel(level, fromST = false, max = 254) {
 //	log.trace "scaleLevel( ${level}, ${fromST}, ${max} )"
     /* scale level from 0-254 to 0-100 */
+    level = ( level == null ) ? 0 : level as Integer
     
     if (fromST) {
         return Math.round( level * max / 100 )
